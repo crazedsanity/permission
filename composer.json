@@ -1,0 +1,23 @@
+{
+	"name": "crazedsanity/permission",
+	"license": "MIT",
+	"description": "Library for handling permissions.",
+	"keywords": ["php", "dry", "oaoo", "database", "postgres", "mysql", "sqlite", "pdo", "security", "permission"],
+	"homepage": "http://www.crazedsanity.com",
+	"authors": [
+		{
+			"name": "Dan Falconer",
+			"email": "github@crazedsanity.com",
+			"homepage": "http://www.crazedsanity.com",
+			"role": "Developer"
+		}
+	],
+	"autoload": {
+		"classmap": ["src/"]
+	},
+	"require": {
+		"php":	">=5.3.0",
+		"crazedsanity/database": "~0.3.4"
+	},
+	"minimum-stability": "dev"
+}
