@@ -6,17 +6,16 @@ use \crazedsanity\permission\permission;
 class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 	
 	
-	public function __setup() {
-		
-	}
-	
-	
-	public function test_create() {
+	public function setUp() {
 		parent::internal_connect_db('mysql', 'root');
 		$this->assertEquals('mysql', $this->type, "unexpected type, expected 'mysql', got '". $this->type ."'");
 		$this->assertTrue(is_object($this->dbObj));
 		$this->assertTrue($this->dbObj->is_connected());
 		$this->assertEquals(1, parent::reset_db(__DIR__ .'/../setup/schema.my.sql'));
+	}
+	
+	
+	public function test_create() {
 		$x = new permission($this->dbObj);
 		
 		$newId = $x->create(__METHOD__, 1, 2, 777);
