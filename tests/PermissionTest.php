@@ -58,86 +58,48 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 	public function test_validPerms() {
 		$o = new permission($this->dbObj);
 		
-		
-		
-		$allValidPermissions = array(
-			'0', '00', '000',
-			'1', '11', '111', '01', '001', '10', '010', '100', '011', '110',
-			'2', '22', '222', '02', '002', '20', '020', '200', '022', '220',
-			'3', '33', '333', '03', '003', '30', '030', '300', '033', '330',
-			'4', '44', '444', '04', '004', '40', '040', '400', '044', '440',
-			'5', '55', '555', '05', '005', '50', '050', '500', '055', '550',
-			'6', '66', '666', '06', '006', '60', '060', '600', '066', '660',
-			'7', '77', '777', '07', '007', '70', '070', '700', '077', '770',
-			'12', '120', '012', '121', '122', '123', '124', '125', '126', '127',
-			'13', '130', '013', '131', '132', '133', '134', '135', '136', '137',
-			'14', '140', '014', '141', '142', '143', '144', '145', '146', '147',
-			'15', '150', '015', '151', '152', '153', '154', '155', '156', '157',
-			'16', '160', '016', '161', '162', '163', '164', '165', '166', '167',
-			'17', '170', '017', '171', '172', '173', '174', '175', '176', '177',
-			'21', '210', '021', '211', '212', '213', '214', '215', '216', '217',
-			'23', '230', '023', '231', '232', '233', '234', '235', '236', '237',
-			'24', '240', '024', '241', '242', '243', '244', '245', '246', '247',
-			'25', '250', '025', '251', '252', '253', '254', '255', '256', '257',
-			'26', '260', '026', '261', '262', '263', '264', '265', '266', '267',
-			'27', '270', '027', '271', '272', '273', '274', '275', '276', '277',
-			'31', '310', '031', '311', '312', '313', '314', '315', '316', '317',
-			'32', '320', '032', '321', '322', '323', '324', '325', '326', '327',
-			'34', '340', '034',
-			'35', '350', '035',
-			'36', '360', '036',
-			'37', '370', '037',
-			'41', '410', '041',
-			'42', '420', '042',
-			'43', '430', '043',
-			'45', '450', '045',
-			'46', '460', '046',
-			'47', '470', '047',
-			'51', '510', '051',
-			'52', '520', '052',
-			'53', '530', '053',
-			'54', '540', '054', 
-			'56', '560', '056',
-			'57', '570', '057',
-			'61', '610', '061',
-			'62', '620', '062',
-			'63', '630', '063',
-			'64', '640', '064',
-			'65', '650', '065',
-			'67', '670', '067',
-		);
-		
-		
-		$didItAlready = array();
-		$uniqPerms = array();
-		
-//		$this->assertEquals(73, count($allValidPermissions));
-		
-		foreach($allValidPermissions as $i => $tryThis) {
-			$this->assertTrue(!isset($didItAlready[$tryThis]), "tried testing a permission twice (". $tryThis .")");
-			$didItAlready[$tryThis] = $i;
+		//NOTE: this seems overly manual... 
+		$i=0;
+		$total = 1; // start at one instead of zero, because we have to create the "000" permission first.
+		$lastId = $o->create(__METHOD__ .'-'. $i, 1, 2, $i);
+		while($i < 777) {
+			$testPerm = $i;
+			$this->assertTrue(is_numeric($testPerm));
+			$this->assertEquals(intval($i), intval(permission::translate_perms($i)));
+			$this->assertEquals(strval($i), intval(permission::translate_perms($i)));
 			
-			$translated = permission::translate_perms($tryThis);
-			$this->assertEquals(intval($tryThis), intval($translated));
-			$this->assertEquals(3, strlen($translated), "invalid translated length (". $translated .") from (". $tryThis .")");
+			$permBits = str_split(permission::translate_perms($testPerm));
 			
-			// if this already exists, we should get an exception... test for that.
-			$newObjName = __METHOD__ ."__". $translated;
-			if(isset($uniqPerms[$translated])) {
-				try {
-					$o->create($newObjName, $i, 2, $tryThis);
-					$this->assertTrue(false, "created");
-				} catch (Exception $ex) {
-					// that's okay, it was not supposed to work.
-				}
+			if(intval($permBits[2]) < 7) {
+				$permBits[2] = intval($permBits[2]) +1;
 			}
 			else {
-				//
-				$o->create($newObjName, $i, 2, $tryThis);
+				$permBits[2] = 0;
+				if(intval($permBits[1]) < 7) {
+					$permBits[1] = intval($permBits[1]) +1;
+				}
+				else {
+					$permBits[1] = 0;
+					if(intval($permBits[0]) < 7) {
+						$permBits[0] = intval($permBits[0]) +1;
+					}
+					else {
+						throw new LogicException(__METHOD__ ." - the cuckoo flew the nest ({$testPerm})... ". print_r($permBits, true));
+					}
+				}
 			}
-			$uniqPerms[$translated] = $i;
+			
+			$i = intval(implode('', $permBits));
+			
+			$testId = $o->create(__METHOD__ ."-". $i, 1, 2, $i);
+			$this->assertTrue(is_numeric($testId));
+			$this->assertTrue($testId > 0);
+			$this->assertNotEquals($lastId, $testId);
+			$lastId = $testId;
+			$total++;
 		}
-
+		
+		$this->assertEquals(512, $total, "wrong number of total permissions created, expected 512, got (". $total .")");
 	}
 	
 }
