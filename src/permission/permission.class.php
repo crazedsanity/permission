@@ -3,6 +3,7 @@
 namespace crazedsanity\permission;
 
 use crazedsanity\database\Database;
+use crazedsanity\core\ToolBox;
 use Exception;
 use InvalidArgumentException;
 
@@ -78,7 +79,7 @@ class permission {
 		// convert the number to a string ("000" becomes "0"; "070" becomes "70"; etc)
 		$newPerms = strval(intval($perms));
 		
-		if(preg_match('/[0-7]{1,3}/', $newPerms) == 1) {
+		if(preg_match('/^[0-7]{1,3}$/', $newPerms) == 1) {
 			if(strlen($newPerms) < 3) {
 				$newPerms = str_repeat('0', 3 - strlen($newPerms)) . "$newPerms";
 			}
@@ -122,22 +123,19 @@ class permission {
 	public function update($id, array $changes) {
 		$sql = 'UPDATE '. self::TABLE .' SET ';
 		$params = array();
+		$changeList = "";
 		foreach($changes as $key=>$value) {
 			switch($key) {
 				case 'object':
 				case 'user_id':
 				case 'group_id':
 					$params[$key] = $value;
-					$sql .= "{$key}=:{$key}";
+					$changeList = ToolBox::create_list($changeList, "{$key}=:{$key}");
 					break;
 				case 'perms':
-					try {
-						$this->translate_perms($value);
-						$params[$key] = $value;
-						$sql .= "{$key}=:{$key}";
-					} catch (Exception $ex) {
-						throw new exception("unable to update: ". $ex->getMessage());
-					}
+					$this->translate_perms($value);
+					$params[$key] = $value;
+					$changeList = ToolBox::create_list($changeList, "{$key}=:{$key}");
 					break;
 				default:
 					throw new InvalidArgumentException("unknown column '". $key ."'");
@@ -145,10 +143,8 @@ class permission {
 		}
 		
 		$params['id'] = $id;
-		$sql .= ' WHERE '. self::PKEY .' = :id';
-		
+		$sql .= $changeList .' WHERE '. self::PKEY .' = :id';
 		$result = $this->db->run_update($sql, $params);
-		
 		return $result;
 	}
 	

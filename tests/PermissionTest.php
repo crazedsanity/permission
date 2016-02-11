@@ -55,6 +55,125 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 	}
 	
 	
+	/**
+	 * @expectedException InvalidArgumentException
+	 * @expectedExceptionMessage user id must be zero or greater
+	 */
+	public function test_invalidUid() {
+		$x = new permission($this->dbObj);
+		$x->create(__METHOD__, null, 0, 777);
+	}
+	
+	
+	public function test_zeroPadding() {
+		$this->assertEquals('000', permission::translate_perms('0'));
+		$this->assertEquals('000', permission::translate_perms(0));
+		
+		$this->assertEquals('000', permission::translate_perms('00'));
+		$this->assertEquals('000', permission::translate_perms(00));
+		
+		$this->assertEquals('000', permission::translate_perms('000'));
+		$this->assertEquals('000', permission::translate_perms(000));
+	}
+	
+	
+	
+	
+	public function test_translateNullPermission() {
+		$this->assertEquals('000', permission::translate_perms(null));
+	}
+	
+	
+	/**
+	 * @expectedException InvalidArgumentException
+	 * @expectedExceptionMessage invalid permission
+	 */
+	public function test_translateInvalidPermission() {
+		permission::translate_perms(999);
+	}
+	
+	
+	/**
+	 * Make sure that a permission that *contains* a permission isn't evaluated 
+	 * as valid (the whole thing must be valid)
+	 * 
+	 * @expectedException InvalidArgumentException
+	 * @expectedExceptionMessage invalid permission
+	 */
+	public function test_translateInvalidLongPermission() {
+		permission::translate_perms(7777);
+	}
+	
+	
+	/**
+	 * @expectedException InvalidArgumentException
+	 * @expectedExceptionMessage group id must be zero or greater
+	 */
+	public function test_invalidGid() {
+		$x = new permission($this->dbObj);
+		$x->create(__METHOD__, 0, null, 777);
+	}
+	
+	
+	public function test_crud() {
+		$o = new permission($this->dbObj);
+		
+		$theId = $o->create(__METHOD__, 1, 2, 123);
+		$this->assertEquals(1, $theId);
+		
+		$updateRes = $o->update($theId, array(
+			'user_id'	=> 7,
+			'group_id'	=> 8,
+			'perms'		=> 456,
+		));
+		$this->assertEquals(1, $updateRes);
+		
+		//see that we get 0 from MySQL for trying to do an identical update again.
+		$this->assertEquals('mysql', $this->dbObj->get_dbtype());
+		$dupe = $o->update($theId, array(
+			'user_id'	=> 7,
+			'group_id'	=> 8,
+			'perms'		=> 456,
+		));
+		$this->assertEquals(0, $dupe);
+		
+		$delRes = $o->delete($theId);
+		$this->assertEquals(1, $delRes);
+		$this->assertEquals(array(), $o->get($theId));
+	}
+	
+	
+	/**
+	 * @expectedException InvalidArgumentException
+	 * @expectedExceptionMessage invalid perm
+	 */
+	public function test_updateWithInvalidPerm() {
+		$o = new permission($this->dbObj);
+		$theId = $o->create(__METHOD__, 1, 2, 123);
+		$this->assertEquals(1, $theId);
+		
+		$updateRes = $o->update($theId, array(
+			'user_id'	=> 7,
+			'group_id'	=> 8,
+			'perms'		=> 77777,
+		));
+		
+	}
+	
+	/**
+	 * @expectedException InvalidArgumentException
+	 * @expectedExceptionMessage unknown column 'uid'
+	 */
+	public function test_updateWithInvalidColumn() {
+		$o = new permission($this->dbObj);
+		$theId = $o->create(__METHOD__, 1, 2, 123);
+		$this->assertEquals(1, $theId);
+		
+		// here's the exception causer:
+		$o->update($theId, array('uid'	=> 7,));
+	}
+	
+	
 	public function test_validPerms() {
 		$o = new permission($this->dbObj);
 		
@@ -89,6 +208,10 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 				}
 			}
 			
+			foreach($permBits as $k=>$v) {
+				$this->assertTrue(permission::is_valid_perm($v));
+			}
+			
 			$i = intval(implode('', $permBits));
 			
 			$testId = $o->create(__METHOD__ ."-". $i, 1, 2, $i);
@@ -96,6 +219,7 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 			$this->assertTrue($testId > 0);
 			$this->assertNotEquals($lastId, $testId);
 			$lastId = $testId;
+			
 			$total++;
 		}
 		
