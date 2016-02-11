@@ -3,6 +3,8 @@
 namespace crazedsanity\permission;
 
 use crazedsanity\database\Database;
+use Exception;
+use InvalidArgumentException;
 
 class permission {
 	
@@ -32,6 +34,20 @@ class permission {
 	 * @return int			The newly-created ID
 	 */
 	public function create($object, $uid, $gid, $perms) {
+		
+		//TODO: test that the "object" meets certain criteria.
+		if(!is_numeric($uid) || $uid < 0) {
+			throw new InvalidArgumentException("user id must be zero or greater");
+		}
+		if(!is_numeric($gid) || $gid < 0) {
+			throw new InvalidArgumentException("group id must be zero or greater");
+		}
+		try {
+			$newPerms = $this->translate_perms($perms);
+		} catch (Exception $ex) {
+			throw $ex;
+		}
+		
 		$sql = 'INSERT INTO '. self::TABLE .' (object, user_id, group_id, perms) 
 			VALUES (:object, :uid, :gid, :perms)';
 		
@@ -40,7 +56,7 @@ class permission {
 			'object'	=> $object,
 			'uid'		=> $uid,
 			'gid'		=> $gid,
-			'perms'		=> $perms,
+			'perms'		=> $newPerms,
 		);
 		
 		$newId = $this->db->run_insert($sql, $params, self::SEQ);
@@ -53,29 +69,24 @@ class permission {
 	 * Translate permission string; given a non-3-digit number, missing numbers 
 	 * are assumed to be zero ("1" == "001", "12" == "012", and "123" == "123").
 	 * 
-	 * @param int $perms	1-3 digit numeric string, each number being 0-7.
+	 * @param int $newPerms	1-3 digit numeric string, each number being 0-7.
 	 * @return string		3-digit numeric string with prefixed zeroes.
 	 * @throws InvalidArgumentException
 	 */
-	public function translate_perms($perms) {
-		if(preg_match('/[0-7]{1,3}/', $perms) == 1) {
-			$bits = explode('', $perms);
-			
-			$newPerms = "000";
-			if(count($bits) === 3) {
-				$newPerms = $perms;
+	public static function translate_perms($perms) {
+		
+		// convert the number to a string ("000" becomes "0"; "070" becomes "70"; etc)
+		$newPerms = strval(intval($perms));
+		
+		if(preg_match('/[0-7]{1,3}/', $newPerms) == 1) {
+			if(strlen($newPerms) < 3) {
+				$newPerms = str_repeat('0', 3 - strlen($newPerms)) . "$newPerms";
 			}
-			elseif(count($bits == 2)) {
-				$newPerms = "0". $perms;
-			}
-			else {
-				$newPerms = "00". $perms;
-			}
-			
 		}
 		else {
-			throw new InvalidArgumentException("invalid permission value ({$perms})");
+			throw new InvalidArgumentException("invalid permission value ({$newPerms})");
 		}
+		
 		return $newPerms;
 	}
 	
