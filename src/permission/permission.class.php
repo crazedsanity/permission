@@ -4,12 +4,15 @@ namespace crazedsanity\permission;
 
 use crazedsanity\database\Database;
 use crazedsanity\core\ToolBox;
+use crazedsanity\bitwise \Bitwise;
+
 use Exception;
 use InvalidArgumentException;
 
 class permission {
 	
 	protected $db;
+	protected $bit;
 	
 	const TABLE = 'permission_table';
 	const PKEY = 'permission_id';
@@ -21,6 +24,7 @@ class permission {
 	
 	public function __construct(Database $db) {
 		$this->db = $db;
+		$this->bit = new Bitwise();
 	}
 	
 	
@@ -189,6 +193,51 @@ class permission {
 		
 		$result = $this->db->get_single_record();
 		
+		return $result;
+	}
+	
+	
+	
+	/**
+	 * Determines if the given permission allows access at all.
+	 * 
+	 * @param int/string $perm	Permission to test (0-7)
+	 * @return boolean			True only if it's valid and > 0, false otherwise
+	 */
+	public static function hasAccess($perm) {
+		$result = false;
+		if(self::is_valid_perm($perm) && intval($perm) > 0) {
+			$result = true;
+		}
+		return $result;
+	}
+	
+	
+	
+	public static function canRead($perm) {
+		$result = false;
+		if(self::is_valid_perm($perm) && Bitwise::canAccess(intval($perm), self::READ)) {
+			$result = true;
+		}
+		return $result;
+	}
+	
+	
+	public static function canWrite($perm) {
+		$result = false;
+		if(self::is_valid_perm($perm) && Bitwise::canAccess(intval($perm), self::WRITE)) {
+			$result = true;
+		}
+		return $result;
+	}
+	
+	
+	
+	public static function canExecute($perm) {
+		$result = false;
+		if(self::is_valid_perm($perm) && Bitwise::canAccess(intval($perm), self::EXECUTE)) {
+			$result = true;
+		}
 		return $result;
 	}
 }
