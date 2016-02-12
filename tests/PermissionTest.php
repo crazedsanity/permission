@@ -175,7 +175,7 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 	
 	
 	
-	public function xtest_validPerms() {
+	public function test_validPerms() {
 		$o = new permission($this->dbObj);
 		
 		//NOTE: this seems overly manual... 
@@ -230,41 +230,49 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 	
 	public function testPerms() {
 		// 0: ---
+		$this->assertFalse(permission::hasAccess(0));
 		$this->assertFalse(permission::canRead(0));
 		$this->assertFalse(permission::canWrite(0));
 		$this->assertFalse(permission::canExecute(0));
 		
 		// 1: --x
+		$this->assertTrue(permission::hasAccess(1));
 		$this->assertFalse(permission::canRead(1));
 		$this->assertFalse(permission::canWrite(1));
 		$this->assertTrue(permission::canExecute(1));
 		
 		// 2: -w-
+		$this->assertTrue(permission::hasAccess(2));
 		$this->assertFalse(permission::canRead(2));
 		$this->assertTrue(permission::canWrite(2));
 		$this->assertFalse(permission::canExecute(2));
 		
 		// 3: -wx
+		$this->assertTrue(permission::hasAccess(3));
 		$this->assertFalse(permission::canRead(3));
 		$this->assertTrue(permission::canWrite(3));
 		$this->assertTrue(permission::canExecute(3));
 		
 		// 4: r--
+		$this->assertTrue(permission::hasAccess(4));
 		$this->assertTrue(permission::canRead(4));
 		$this->assertFalse(permission::canWrite(4));
 		$this->assertFalse(permission::canExecute(4));
 		
 		// 5: r-x
+		$this->assertTrue(permission::hasAccess(5));
 		$this->assertTrue(permission::canRead(5));
 		$this->assertFalse(permission::canWrite(5));
 		$this->assertTrue(permission::canExecute(5));
 		
 		// 6: rw-
+		$this->assertTrue(permission::hasAccess(6));
 		$this->assertTrue(permission::canRead(6));
 		$this->assertTrue(permission::canWrite(6));
 		$this->assertFalse(permission::canExecute(6));
 		
 		// 7: rwx
+		$this->assertTrue(permission::hasAccess(7));
 		$this->assertTrue(permission::canRead(7));
 		$this->assertTrue(permission::canWrite(7));
 		$this->assertTrue(permission::canExecute(7));

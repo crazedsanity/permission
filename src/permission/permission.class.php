@@ -205,39 +205,23 @@ class permission {
 	 * @return boolean			True only if it's valid and > 0, false otherwise
 	 */
 	public static function hasAccess($perm) {
-		$result = false;
-		if(self::is_valid_perm($perm) && intval($perm) > 0) {
-			$result = true;
-		}
-		return $result;
+		return (intval($perm) > 0);
 	}
 	
 	
 	
 	public static function canRead($perm) {
-		$result = false;
-		if(self::is_valid_perm($perm) && Bitwise::canAccess(intval($perm), self::READ)) {
-			$result = true;
-		}
-		return $result;
+		return Bitwise::canAccess(intval($perm), self::READ);
 	}
 	
 	
 	public static function canWrite($perm) {
-		$result = false;
-		if(self::is_valid_perm($perm) && Bitwise::canAccess(intval($perm), self::WRITE)) {
-			$result = true;
-		}
-		return $result;
+		return Bitwise::canAccess(intval($perm), self::WRITE);
 	}
 	
 	
 	
 	public static function canExecute($perm) {
-		$result = false;
-		if(self::is_valid_perm($perm) && Bitwise::canAccess(intval($perm), self::EXECUTE)) {
-			$result = true;
-		}
-		return $result;
+		return Bitwise::canAccess(intval($perm), self::EXECUTE);
 	}
 }
