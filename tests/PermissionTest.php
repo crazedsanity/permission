@@ -3,7 +3,7 @@
 use \crazedsanity\core\ToolBox;
 use \crazedsanity\permission\permission;
 
-class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
+class TestOfPermission extends crazedsanity\database\TestDbAbstract {
 	
 	
 	public function setUp() {
@@ -67,13 +67,13 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 	
 	public function test_zeroPadding() {
 		$this->assertEquals('000', permission::translate_perms('0'));
-		$this->assertEquals('000', permission::translate_perms(0));
+		$this->assertEquals('000', permission::translate_perms('0'));
 		
 		$this->assertEquals('000', permission::translate_perms('00'));
-		$this->assertEquals('000', permission::translate_perms(00));
+		$this->assertEquals('000', permission::translate_perms('00'));
 		
 		$this->assertEquals('000', permission::translate_perms('000'));
-		$this->assertEquals('000', permission::translate_perms(000));
+		$this->assertEquals('000', permission::translate_perms('000'));
 	}
 	
 	
@@ -89,7 +89,7 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 	 * @expectedExceptionMessage invalid permission
 	 */
 	public function test_translateInvalidPermission() {
-		permission::translate_perms(999);
+		permission::translate_perms('999');
 	}
 	
 	
@@ -101,7 +101,14 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 	 * @expectedExceptionMessage invalid permission
 	 */
 	public function test_translateInvalidLongPermission() {
-		permission::translate_perms(7777);
+		permission::translate_perms('7777');
+	}
+	
+	
+	public function test_translatePermIntWithLeadingZero() {
+		$this->assertFalse(is_int("36"));
+		$this->assertTrue(is_int(36));
+		$this->assertEquals("036", permission::translate_perms("36"));
 	}
 	
 	
@@ -115,7 +122,7 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 	}
 	
 	
-	public function test_crud() {
+	public function test_updateAndDelete() {
 		$o = new permission($this->dbObj);
 		
 		$theId = $o->create(__METHOD__, 1, 2, 123);
@@ -181,14 +188,14 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 		//NOTE: this seems overly manual... 
 		$i=0;
 		$total = 1; // start at one instead of zero, because we have to create the "000" permission first.
-		$lastId = $o->create(__METHOD__ .'-'. $i, 1, 2, $i);
+		$lastId = $o->create(__METHOD__ .'-'. $i, 1, 2, "$i");
 		while($i < 777) {
 			$testPerm = $i;
 			$this->assertTrue(is_numeric($testPerm));
-			$this->assertEquals(intval($i), intval(permission::translate_perms($i)));
-			$this->assertEquals(strval($i), intval(permission::translate_perms($i)));
+			$this->assertEquals(intval($i), intval(permission::translate_perms("$i")));
+			$this->assertEquals(strval($i), intval(permission::translate_perms("$i")));
 			
-			$permBits = str_split(permission::translate_perms($testPerm));
+			$permBits = str_split(permission::translate_perms("$testPerm"));
 			
 			if(intval($permBits[2]) < 7) {
 				$permBits[2] = intval($permBits[2]) +1;
@@ -214,12 +221,6 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 			}
 			
 			$i = intval(implode('', $permBits));
-			
-			$testId = $o->create(__METHOD__ ."-". $i, 1, 2, $i);
-			$this->assertTrue(is_numeric($testId));
-			$this->assertTrue($testId > 0);
-			$this->assertNotEquals($lastId, $testId);
-			$lastId = $testId;
 			
 			$total++;
 		}
@@ -277,5 +278,67 @@ class TestOfDatabase extends crazedsanity\database\TestDbAbstract {
 		$this->assertTrue(permission::canWrite(7));
 		$this->assertTrue(permission::canExecute(7));
 		
+	}
+	
+	
+	public function test_getPermBits() {
+		$permBits = permission::getPermBits("0");
+		$this->assertEquals(0, $permBits[permission::USER]);
+		$this->assertEquals(0, $permBits[permission::GROUP]);
+		$this->assertEquals(0, $permBits[permission::OTHER]);
+		
+		$permBits2 = permission::getPermBits("123");
+		$this->assertEquals(1, $permBits2[permission::USER]);
+		$this->assertEquals(2, $permBits2[permission::GROUP]);
+		$this->assertEquals(3, $permBits2[permission::OTHER]);
+		
+		
+		$this->assertEquals(str_split(permission::translate_perms("012")), permission::getPermBits("012"));
+	}
+	
+	
+	
+	/**
+	 * @expectedException PHPUnit_Framework_Error_Notice
+	 * @expectedExceptionMessage octal conversion
+	 */
+	public function test_octalConversionWarning() {
+		permission::translate_perms(012);
+	}
+	
+	
+	public function test_getPermissionBit() {
+		$testBits = 123;
+		$this->assertEquals(1, permission::getPermissionBit($testBits, permission::USER));
+		$this->assertEquals(2, permission::getPermissionBit($testBits, permission::GROUP));
+		$this->assertEquals(3, permission::getPermissionBit($testBits, permission::OTHER));
+		
+		
+		$shorthandOne = "1";
+		$this->assertEquals(0, permission::getPermissionBit($shorthandOne, permission::USER));
+		$this->assertEquals(0, permission::getPermissionBit($shorthandOne, permission::GROUP));
+		$this->assertEquals(1, permission::getPermissionBit($shorthandOne, permission::OTHER));
+		
+		
+		$shorthandTwo = "67";
+		$this->assertEquals(0, permission::getPermissionBit($shorthandTwo, permission::USER));
+		$this->assertEquals(6, permission::getPermissionBit($shorthandTwo, permission::GROUP));
+		$this->assertEquals(7, permission::getPermissionBit($shorthandTwo, permission::OTHER), "failed to get permission bit for OTHER, got: ". permission::getPermissionBit($shorthandTwo, permission::OTHER));
+		
+		
+		$shorthandThree = "12";
+		$this->assertEquals(0, permission::getPermissionBit($shorthandThree, permission::USER));
+		$this->assertEquals(1, permission::getPermissionBit($shorthandThree, permission::GROUP));
+		$this->assertEquals(2, permission::getPermissionBit($shorthandThree, permission::OTHER), "failed to get permission bit for OTHER, got: ". permission::getPermissionBit($shorthandThree, permission::OTHER));
+		
+	}
+	
+	
+	/**
+	 * @expectedException InvalidArgumentException
+	 * @expectedExceptionMessage invalid permission bit
+	 */
+	public function test_getInvalidPermissionBit() {
+		permission::getPermissionBit("123", 4);
 	}
 }

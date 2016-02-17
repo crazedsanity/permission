@@ -12,7 +12,6 @@ use InvalidArgumentException;
 class permission {
 	
 	protected $db;
-	protected $bit;
 	
 	const TABLE = 'permission_table';
 	const PKEY = 'permission_id';
@@ -22,9 +21,14 @@ class permission {
 	const WRITE = 2;
 	const READ = 4;
 	
+	//zero-based position for each section of a permission string
+	const USER = 0;
+	const GROUP = 1;
+	const OTHER = 2;
+	
+
 	public function __construct(Database $db) {
 		$this->db = $db;
-		$this->bit = new Bitwise();
 	}
 	
 	
@@ -74,11 +78,15 @@ class permission {
 	 * Translate permission string; given a non-3-digit number, missing numbers 
 	 * are assumed to be zero ("1" == "001", "12" == "012", and "123" == "123").
 	 * 
-	 * @param int $newPerms	1-3 digit numeric string, each number being 0-7.
+	 * @param int $perms	1-3 digit numeric string, each number being 0-7.
 	 * @return string		3-digit numeric string with prefixed zeroes.
 	 * @throws InvalidArgumentException
 	 */
 	public static function translate_perms($perms) {
+		
+		if(strlen($perms) < 3 && is_int($perms)) {
+			trigger_error("using shorthand permission strings can lead to accidental octal conversion - see http://php.net/manual/en/language.types.integer.php ");
+		}//@codeCoverageIgnore
 		
 		// convert the number to a string ("000" becomes "0"; "070" becomes "70"; etc)
 		$newPerms = strval(intval($perms));
@@ -92,7 +100,7 @@ class permission {
 			throw new InvalidArgumentException("invalid permission value ({$newPerms})");
 		}
 		
-		return $newPerms;
+		return strval($newPerms);
 	}
 	
 	
@@ -223,5 +231,19 @@ class permission {
 	
 	public static function canExecute($perm) {
 		return Bitwise::canAccess(intval($perm), self::EXECUTE);
+	}
+	
+	
+	public static function getPermBits($perm) {
+		return str_split(self::translate_perms($perm));
+	}
+	
+	
+	public static function getPermissionBit($perm, $bit=self::USER) {
+		$permBits = self::getPermBits($perm);
+		if(!isset($permBits[$bit])) {
+			throw new \InvalidArgumentException("invalid permission bit requested (". $bit .")");
+		}
+		return $permBits[$bit];
 	}
 }
