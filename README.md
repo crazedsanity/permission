@@ -61,9 +61,10 @@ So, to expand on that, you can read the following values as:
 It's somewhat important to know the order in which permissions are determined. 
 So here it is.
 
-1. *user*: if the `user_id` matches, the first set of permissions (the left-most set) take precendence.
-1. *group*: if the `group_id` matches (and `user_id` does not), the group permissions take precedence.
-1. *other*: if neither `user_id` nor `group_id` match, the other permissions take precedence.
+1. *user*: if the `user_id` matches, the first set of permissions (the left-most set) are used.
+1. *group*: if the `group_id` matches (and `user_id` does not), the group permissions are used.
+1. *other*: if neither `user_id` nor `group_id` match, the other permissions are used.
+
 
 # Example Usage
 
